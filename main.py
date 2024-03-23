@@ -82,7 +82,9 @@ async def websocket_endpoint(
         authorization: Annotated[str | None, Header()] = None
 ):
     if authorization != ESP_AUTHORIZATION_TOKEN:
-        return await websocket.close(1008)
+        return await websocket.close(1008, 'Unauthorized request.')
+    if websocket_manager.active_connection:
+        return await websocket.close(1008, 'Another ESP is connected.')
     await websocket_manager.connect(websocket)
     try:
         while True:
