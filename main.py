@@ -1,4 +1,5 @@
 import os
+from asyncio import sleep
 from datetime import datetime
 from textwrap import dedent
 from typing import Annotated
@@ -10,10 +11,12 @@ from fastapi.responses import HTMLResponse
 load_dotenv('local.env')
 API_AUTHORIZATION_TOKEN_LIST = [token.strip() for token in os.environ.get('API_AUTHORIZATION_TOKEN_LIST').split(',')]
 ESP_AUTHORIZATION_TOKEN = os.environ.get('ESP_AUTHORIZATION_TOKEN')
+UPDATE_AUTHORIZATION_TOKEN = os.environ.get('UPDATE_AUTHORIZATION_TOKEN')
 
 
 class WebSocketConnectionManager:
     LOG_FILE_PATH = 'data/log.txt'
+    FIRMWARE_FILE_PATH = 'data/firmware.bin'
 
     def __init__(self):
         self.active_connection: WebSocket | None = None
@@ -41,6 +44,26 @@ class WebSocketConnectionManager:
         if not self.active_connection:
             raise HTTPException(503, 'No active connection.')
         return await self.active_connection.send_json({'command': 'open-door', 'message': 'Please open the door.'})
+
+    async def send_update_firmware_command(self):
+        if not self.active_connection:
+            raise HTTPException(503, 'No active connection.')
+        firmware_size = os.path.getsize(self.FIRMWARE_FILE_PATH)
+        await self.active_connection.send_json({'command': 'update', 'size': firmware_size})
+        # response = await self.active_connection.receive_json()
+        # if not response['success']:
+        #     raise HTTPException(400, response['message'])
+
+        with open(self.FIRMWARE_FILE_PATH, "rb") as binary_file:
+            while True:
+                chunk = binary_file.read(4096)
+                if not chunk:
+                    break
+                try:
+                    await self.active_connection.send_bytes(chunk)
+                except Exception:
+                    raise HTTPException(500, 'Error in send firmware.')
+                await sleep(0.2)
 
 
 websocket_manager = WebSocketConnectionManager()
@@ -70,6 +93,16 @@ async def get():
 @app.get("/status")
 async def get_status():
     return HTMLResponse(str(websocket_manager.active_connection is not None))
+
+
+@app.post("/update")
+async def open_door(
+        authorization: Annotated[str | None, Header()] = None
+):
+    if authorization != UPDATE_AUTHORIZATION_TOKEN:
+        raise HTTPException(status_code=401, detail='Unauthorized request.')
+    await websocket_manager.send_update_firmware_command()
+    return 'OK'
 
 
 @app.post("/open")
