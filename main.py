@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from textwrap import dedent
 from typing import Annotated
 
 from dotenv import load_dotenv
@@ -49,7 +50,7 @@ app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
 async def get():
-    home_page = """
+    home_page = dedent("""
         <!DOCTYPE html>
         <html>
             <head>
@@ -60,7 +61,7 @@ async def get():
                 <h3>status: {status}</h3>
             </body>
         </html>
-        """
+    """)
     return HTMLResponse(
         home_page.format(status='connected ✅' if websocket_manager.active_connection else 'disconnected ❌')
     )
@@ -68,7 +69,7 @@ async def get():
 
 @app.get("/status")
 async def get_status():
-    return websocket_manager.active_connection is not None
+    return HTMLResponse(str(websocket_manager.active_connection is not None))
 
 
 @app.post("/open")
@@ -97,3 +98,19 @@ async def websocket_endpoint(
             await websocket.send_text(f"I've received '{data}'.")
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket)
+
+
+@app.exception_handler(404)
+async def not_found_exception_handler(request, exc):
+    custom_404_page = dedent('''
+        <!doctype html>
+        <html lang="en">
+        <head>
+            <title>Not Found</title>
+        </head>
+        <body>
+        <h1>Not Found</h1><p>The requested resource was not found on this server.</p>
+        </body>
+        </html>
+    ''')
+    return HTMLResponse(custom_404_page)
