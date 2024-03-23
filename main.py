@@ -12,6 +12,8 @@ ESP_AUTHORIZATION_TOKEN = os.environ.get('ESP_AUTHORIZATION_TOKEN')
 
 
 class WebSocketConnectionManager:
+    LOG_FILE_PATH = 'data/log.txt'
+
     def __init__(self):
         self.active_connection: WebSocket | None = None
         self.last_change: datetime | None = None
@@ -28,8 +30,11 @@ class WebSocketConnectionManager:
         self.log_in_file(False)
 
     def log_in_file(self, is_connection_event: bool):
-        with open('data/log.txt', 'a+') as f:
+        with open(self.LOG_FILE_PATH, 'a+') as f:
             f.write(('new , {}\n' if is_connection_event else 'loss, {}\n').format(self.last_change))
+        # Delete the log file, if it exceeds 100 MB:
+        if os.path.getsize(self.LOG_FILE_PATH) > 100 * 1024 * 1024:
+            os.remove(self.LOG_FILE_PATH)
 
     async def send_open_door_command(self):
         if not self.active_connection:
