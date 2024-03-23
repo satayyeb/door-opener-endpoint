@@ -40,7 +40,7 @@ class WebSocketConnectionManager:
     async def send_open_door_command(self):
         if not self.active_connection:
             raise HTTPException(503, 'No active connection.')
-        return await self.active_connection.send_text('open-door')
+        return await self.active_connection.send_json({'command': 'open-door', 'message': 'Please open the door.'})
 
 
 websocket_manager = WebSocketConnectionManager()
@@ -95,7 +95,7 @@ async def websocket_endpoint(
     try:
         while True:
             data = await websocket.receive_text()
-            await websocket.send_text(f"I've received '{data}'.")
+            await websocket.send_json({'command': 'server-echo', 'message': f"I've received '{data}'."})
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket)
 
