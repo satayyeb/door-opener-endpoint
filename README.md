@@ -19,3 +19,4 @@
 ```shell
     docker run -p 8000:8000 -v door:/opt/data --env-file local.env --rm door-opener-endpoint:1.0.0
 ```
+
