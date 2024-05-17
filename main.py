@@ -4,6 +4,8 @@ from datetime import datetime
 from textwrap import dedent
 from typing import Annotated
 
+import requests
+import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, HTTPException
 from fastapi.responses import HTMLResponse
@@ -12,6 +14,7 @@ load_dotenv('local.env')
 API_AUTHORIZATION_TOKEN_LIST = [token.strip() for token in os.environ.get('API_AUTHORIZATION_TOKEN_LIST').split(',')]
 ESP_AUTHORIZATION_TOKEN = os.environ.get('ESP_AUTHORIZATION_TOKEN')
 UPDATE_AUTHORIZATION_TOKEN = os.environ.get('UPDATE_AUTHORIZATION_TOKEN')
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
 
 
 class WebSocketConnectionManager:
@@ -67,6 +70,11 @@ class WebSocketConnectionManager:
 
 
 websocket_manager = WebSocketConnectionManager()
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    traces_sample_rate=1.0,
+)
 
 app = FastAPI()
 
