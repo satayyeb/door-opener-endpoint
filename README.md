@@ -1,6 +1,12 @@
 ## Door opener endpoint
 
-### Development:
+
+#### Required environment variables:
+
+- `API_AUTHORIZATION_TOKEN_LIST`
+- `ESP_AUTHORIZATION_TOKEN`
+- `UPDATE_AUTHORIZATION_TOKEN`
+- `SENTRY_DSN`
 
 #### Run:
 
